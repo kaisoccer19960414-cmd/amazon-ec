@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>注文履歴 - Amazon EC</title>
+    <style>
+        body { font-family: sans-serif; margin: 0; background: #f7f7f7; }
+        header { background: #232f3e; color: #fff; padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; }
+        header a { color: #fff; text-decoration: none; font-size: 13px; margin-left: 16px; }
+        main { padding: 24px; max-width: 700px; margin: 0 auto; }
+        h1 { font-size: 18px; }
+        .order { background: #fff; border-radius: 8px; padding: 16px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); display: flex; justify-content: space-between; align-items: center; }
+        .order-id { font-size: 13px; color: #333; font-weight: bold; }
+        .order-date { font-size: 12px; color: #999; margin-top: 4px; }
+        .status { padding: 4px 10px; border-radius: 4px; font-size: 12px; color: #fff; white-space: nowrap; }
+        .status-PENDING { background: #999; }
+        .status-STOCK_RESERVED { background: #6c8ebf; }
+        .status-COMPLETED { background: #2e8b57; }
+        .status-COMPENSATING { background: #d99a2b; }
+        .status-CANCELLED { background: #888; }
+        .status-STOCK_FAILED { background: #b85c5c; }
+        .status-COMPENSATION_FAILED { background: #c0392b; font-weight: bold; }
+        .empty { text-align: center; color: #999; margin-top: 60px; }
+        .logout-btn { display: inline; width: auto; padding: 0; background: none; color: #fff; font-size: 13px; margin-left: 16px; text-decoration: none; border: none; cursor: pointer; font-weight: normal; }
+    </style>
+</head>
+<body>
+<header>
+    <div>Amazon EC</div>
+    <div>
+        <a th:href="@{/products}">商品一覧</a>
+        <a th:href="@{/account/card}">カード管理</a>
+        <form th:action="@{/logout}" method="post" style="display:inline;">
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+            <button type="submit" class="logout-btn">ログアウト</button>
+        </form>
+    </div>
+</header>
+
+<main>
+    <h1>注文履歴</h1>
+
+    <div class="order" th:each="order : ${orders}">
+        <div>
+            <div class="order-id" th:text="${order.id}"></div>
+            <div class="order-date" th:text="${order.createdAt}"></div>
+        </div>
+        <span class="status" th:classappend="'status-' + ${order.status}" th:text="${order.status}"></span>
+    </div>
+
+    <p class="empty" th:if="${orders.isEmpty()}">まだ注文がありません</p>
+</main>
+</body>
+</html>

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>商品一覧 - Amazon EC</title>
+    <style>
+        body { font-family: sans-serif; margin: 0; background: #f7f7f7; }
+        header { background: #232f3e; color: #fff; padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; }
+        header a { color: #fff; text-decoration: none; font-size: 13px; margin-left: 16px; }
+        main { padding: 24px; }
+        .banner { background: #fff3cd; border: 1px solid #ffe58f; padding: 12px 16px; border-radius: 4px; margin-bottom: 20px; font-size: 14px; }
+        .banner a { color: #1a73e8; }
+        .success { background: #e6f4ea; border: 1px solid #b7e1c1; padding: 12px 16px; border-radius: 4px; margin-bottom: 20px; font-size: 14px; color: #2e7d32; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
+        .card { background: #fff; border-radius: 8px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .card h2 { font-size: 15px; margin: 0 0 8px; }
+        .price { font-size: 18px; font-weight: bold; margin-bottom: 4px; }
+        .stock { font-size: 12px; color: #666; margin-bottom: 12px; }
+        button { width: 100%; padding: 8px; background: #f0ad4e; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        button:hover { background: #ec9a3c; }
+        .logout-btn { display: inline; width: auto; padding: 0; background: none; color: #fff; font-size: 13px; margin-left: 16px; text-decoration: none; border: none; cursor: pointer; font-weight: normal; }
+    </style>
+</head>
+<body>
+<header>
+    <div>Amazon EC</div>
+    <div>
+        <a th:href="@{/account/orders}">注文履歴</a>
+        <a th:href="@{/account/card}">カード管理</a>
+        <form th:action="@{/logout}" method="post" style="display:inline;">
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+            <button type="submit" class="logout-btn">ログアウト</button>
+        </form>
+    </div>
+</header>
+
+<main>
+    <div class="banner" th:unless="${cardRegistered}">
+        カードが未登録です。<a th:href="@{/account/card}">こちらから登録</a>してください。
+    </div>
+    <div class="success" th:if="${param.cardRegistered}">カードを登録しました。</div>
+
+    <div class="grid">
+        <div class="card" th:each="product : ${products}">
+            <h2 th:text="${product.name}"></h2>
+            <div class="price" th:text="'¥' + ${product.price}"></div>
+            <div class="stock" th:text="'在庫: ' + ${product.cachedStock}"></div>
+            <form method="post" th:action="@{'/products/' + ${product.id} + '/purchase'}">
+                <input type="hidden" name="quantity" value="1">
+                <button type="submit" th:disabled="${!cardRegistered}">購入する</button>
+            </form>
+        </div>
+    </div>
+</main>
+</body>
+</html>

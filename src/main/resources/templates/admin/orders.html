@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>注文管理 - Amazon EC</title>
+    <style>
+        body { font-family: sans-serif; margin: 40px; background: #f7f7f7; }
+        h1 { font-size: 20px; }
+        table { border-collapse: collapse; width: 100%; background: #fff; }
+        th, td { border: 1px solid #ddd; padding: 8px 12px; font-size: 13px; text-align: left; }
+        th { background: #333; color: #fff; }
+        .filter { margin-bottom: 16px; }
+        .filter a {
+            display: inline-block; margin-right: 8px; padding: 4px 10px;
+            border-radius: 4px; text-decoration: none; background: #eee; color: #333; font-size: 13px;
+        }
+        .filter a.active { background: #333; color: #fff; }
+
+        .status { padding: 2px 8px; border-radius: 4px; font-size: 12px; color: #fff; white-space: nowrap; }
+        .status-PENDING { background: #999; }
+        .status-STOCK_RESERVED { background: #6c8ebf; }
+        .status-COMPLETED { background: #2e8b57; }
+        .status-COMPENSATING { background: #d99a2b; }
+        .status-CANCELLED { background: #888; }
+        .status-STOCK_FAILED { background: #b85c5c; }
+        .status-COMPENSATION_FAILED { background: #c0392b; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<h1>注文管理</h1>
+
+<div class="filter">
+    <a th:href="@{/admin/orders}"
+       th:classappend="${selectedStatus == null} ? 'active' : ''">すべて</a>
+    <a th:each="s : ${statuses}"
+       th:href="@{/admin/orders(status=${s})}"
+       th:classappend="${selectedStatus != null and selectedStatus.name() == s.name()} ? 'active' : ''"
+       th:text="${s}"></a>
+</div>
+
+<table>
+    <thead>
+    <tr>
+        <th>注文ID</th>
+        <th>ユーザーID</th>
+        <th>商品ID</th>
+        <th>数量</th>
+        <th>予約ID</th>
+        <th>決済ID</th>
+        <th>ステータス</th>
+        <th>作成日時</th>
+        <th>更新日時</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="order : ${orders}">
+        <td th:text="${order.id}"></td>
+        <td th:text="${order.userId}"></td>
+        <td th:text="${order.productId}"></td>
+        <td th:text="${order.quantity}"></td>
+        <td th:text="${order.reservationId}"></td>
+        <td th:text="${order.transactionId}"></td>
+        <td>
+            <span class="status" th:classappend="'status-' + ${order.status}" th:text="${order.status}"></span>
+        </td>
+        <td th:text="${order.createdAt}"></td>
+        <td th:text="${order.updatedAt}"></td>
+    </tr>
+    <tr th:if="${orders.isEmpty()}">
+        <td colspan="9" style="text-align:center; color:#999;">該当する注文はありません</td>
+    </tr>
+    </tbody>
+</table>
+
+</body>
+</html>

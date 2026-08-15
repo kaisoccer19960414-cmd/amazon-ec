@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>新規登録 - Amazon EC</title>
+    <style>
+        body { font-family: sans-serif; display: flex; justify-content: center; margin-top: 80px; background: #f7f7f7; }
+        .box { background: #fff; padding: 32px; border-radius: 8px; width: 320px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+        h1 { font-size: 18px; margin-top: 0; }
+        input { width: 100%; padding: 8px; margin-bottom: 8px; box-sizing: border-box; }
+        button { width: 100%; padding: 10px; background: #333; color: #fff; border: none; border-radius: 4px; cursor: pointer; margin-top: 8px; }
+        .error { color: #c0392b; font-size: 12px; margin: 0 0 8px; }
+        a { font-size: 13px; }
+    </style>
+</head>
+<body>
+<div class="box">
+    <h1>新規登録</h1>
+
+    <p class="error" th:if="${errorMessage}" th:text="${errorMessage}"></p>
+
+    <form method="post" th:action="@{/signup}" th:object="${signupRequest}">
+        <input type="text" th:field="*{username}" placeholder="ユーザー名">
+        <p class="error" th:if="${#fields.hasErrors('username')}" th:errors="*{username}"></p>
+
+        <input type="password" th:field="*{password}" placeholder="パスワード">
+        <p class="error" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></p>
+
+        <button type="submit">登録する</button>
+    </form>
+
+    <p><a th:href="@{/login}">ログイン画面へ戻る</a></p>
+</div>
+</body>
+</html>

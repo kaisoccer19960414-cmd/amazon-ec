@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>カード登録 - Amazon EC</title>
+    <style>
+        body { font-family: sans-serif; display: flex; justify-content: center; margin-top: 80px; background: #f7f7f7; }
+        .box { background: #fff; padding: 32px; border-radius: 8px; width: 340px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+        h1 { font-size: 18px; margin-top: 0; }
+        .note { font-size: 12px; color: #666; margin-bottom: 16px; }
+        input { width: 100%; padding: 8px; margin-bottom: 8px; box-sizing: border-box; }
+        .row { display: flex; gap: 8px; }
+        .row input { width: auto; flex: 1; }
+        button { width: 100%; padding: 10px; background: #333; color: #fff; border: none; border-radius: 4px; cursor: pointer; margin-top: 8px; }
+        .error { color: #c0392b; font-size: 12px; margin: 0 0 8px; }
+    </style>
+</head>
+<body>
+<div class="box">
+    <h1>カード情報の登録</h1>
+    <p class="note">登録したカード情報(トークン)は今後の注文で自動的に使われます。生のカード番号は保存されません。</p>
+
+    <p class="error" th:if="${errorMessage}" th:text="${errorMessage}"></p>
+
+    <form method="post" th:action="@{/account/card}" th:object="${cardRequest}">
+        <input type="text" th:field="*{cardNumber}" placeholder="カード番号(16桁)" maxlength="16">
+        <p class="error" th:if="${#fields.hasErrors('cardNumber')}" th:errors="*{cardNumber}"></p>
+
+        <div class="row">
+            <input type="text" th:field="*{expiryMonth}" placeholder="有効期限(月) 例: 12">
+            <input type="text" th:field="*{expiryYear}" placeholder="有効期限(年) 例: 2028">
+        </div>
+        <p class="error" th:if="${#fields.hasErrors('expiryMonth')}" th:errors="*{expiryMonth}"></p>
+        <p class="error" th:if="${#fields.hasErrors('expiryYear')}" th:errors="*{expiryYear}"></p>
+
+        <input type="text" th:field="*{cvv}" placeholder="セキュリティコード" maxlength="4">
+        <p class="error" th:if="${#fields.hasErrors('cvv')}" th:errors="*{cvv}"></p>
+
+        <button type="submit">登録する</button>
+    </form>
+</div>
+</body>
+</html>

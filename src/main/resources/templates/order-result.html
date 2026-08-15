@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>注文結果 - Amazon EC</title>
+    <style>
+        body { font-family: sans-serif; display: flex; justify-content: center; margin-top: 80px; background: #f7f7f7; }
+        .box { background: #fff; padding: 32px; border-radius: 8px; width: 380px; text-align: center; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+        h1 { font-size: 18px; }
+        .order-id { font-size: 13px; color: #666; margin-bottom: 16px; }
+        .message { font-size: 15px; margin-bottom: 20px; padding: 12px; border-radius: 4px; }
+        .ok { background: #e6f4ea; color: #2e7d32; }
+        .ng { background: #fdecea; color: #c0392b; }
+        a { display: inline-block; margin-top: 8px; font-size: 13px; }
+    </style>
+</head>
+<body>
+<div class="box">
+    <h1>ご注文結果</h1>
+    <div class="order-id" th:text="'注文番号: ' + ${order.id}"></div>
+
+    <div class="message ok" th:if="${order.status.name() == 'COMPLETED'}">
+        ご注文ありがとうございます。注文が確定しました。
+    </div>
+    <div class="message ng" th:if="${order.status.name() == 'CANCELLED'}">
+        決済に失敗したため、注文はキャンセルされました。
+    </div>
+    <div class="message ng" th:if="${order.status.name() == 'STOCK_FAILED'}">
+        申し訳ございません、在庫が不足しています。
+    </div>
+    <div class="message ng" th:if="${order.status.name() == 'COMPENSATION_FAILED'}">
+        処理中にエラーが発生しました。サポートまでお問い合わせください。
+    </div>
+    <div class="message ng" th:if="${order.status.name() == 'COMPENSATING'}">
+        現在お取引を処理しています。しばらくお待ちください。
+    </div>
+
+    <a th:href="@{/products}">商品一覧へ戻る</a>
+</div>
+</body>
+</html>
