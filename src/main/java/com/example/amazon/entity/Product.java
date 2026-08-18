@@ -29,14 +29,25 @@ public class Product {
     private int cachedStock;
 
     @Setter
+    @Enumerated(EnumType.STRING)
+    private ProductCategory category;
+
+    /** Dellから同期される販売停止フラグ。falseの間は一覧・購入から除外する */
+    @Setter
+    @Column(name = "is_active")
+    private boolean isActive;
+
+    @Setter
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    public Product(String id, String name, int price, int cachedStock) {
+    public Product(String id, String name, int price, int cachedStock, ProductCategory category, boolean isActive) {
         this.id = id;
         this.name = name;
         this.price = price;
         this.cachedStock = cachedStock;
+        this.category = category;
+        this.isActive = isActive;
         this.updatedAt = LocalDateTime.now();
     }
 }

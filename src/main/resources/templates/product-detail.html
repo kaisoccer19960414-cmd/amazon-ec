@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${product.name} + ' - Amazon EC'"></title>
+    <style>
+        body { font-family: sans-serif; margin: 0; background: #f7f7f7; color: #222; }
+        header { background: #232f3e; color: #fff; padding: 12px 24px; display: flex; justify-content: space-between; }
+        header a { color: #fff; text-decoration: none; font-size: 13px; margin-left: 16px; }
+        main { max-width: 920px; margin: 32px auto; }
+        .detail { display: grid; grid-template-columns: 1fr 1.2fr; gap: 32px; background: #fff; padding: 32px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,.1); }
+        .visual { background: #edf1f5; min-height: 260px; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #687078; font-size: 14px; overflow: hidden; }
+        .visual img { width: 100%; height: 100%; max-height: 320px; object-fit: contain; }
+        h1 { font-size: 24px; margin: 0 0 16px; } .price { color: #b12704; font-size: 28px; font-weight: bold; margin-bottom: 12px; }
+        .stock { font-size: 14px; color: #197b30; margin-bottom: 20px; } .description { line-height: 1.7; font-size: 14px; color: #444; }
+        .specs { margin: 20px 0; border-collapse: collapse; width: 100%; font-size: 14px; } .specs th, .specs td { border-bottom: 1px solid #e7e7e7; padding: 9px; text-align: left; } .specs th { width: 35%; background: #fafafa; }
+        .purchase { border-top: 1px solid #eee; padding-top: 20px; } input[type=number] { width: 56px; padding: 7px; margin: 0 12px; } button { padding: 10px 28px; border: 0; border-radius: 4px; background: #f0ad4e; font-weight: bold; cursor: pointer; } .back { display: inline-block; margin-top: 20px; color: #2763a5; }
+    </style>
+</head>
+<body>
+<header><div>Amazon EC</div><div><a th:href="@{/products}">商品一覧</a><a th:href="@{/cart}">カート</a></div></header>
+<main>
+    <section class="detail">
+        <div class="visual">
+            <img th:src="@{${@productImageResolver.resolve(product)}}" th:alt="${product.name}">
+        </div>
+        <div>
+            <h1 th:text="${product.name}"></h1>
+            <div class="price" th:text="'¥' + ${@taxCalculator.includedUnitPrice(product.price)} + '（税込）'"></div>
+            <div class="stock" th:text="'在庫あり（' + ${product.cachedStock} + '点）'"></div>
+            <p class="description" th:text="${product.category} + 'カテゴリの商品です。詳細な仕様をご確認のうえ、数量を選択してカートに追加できます。'"></p>
+            <table class="specs" th:if="${spec != null}">
+                <tr><th>メモリ</th><td th:text="${spec.ramGb} + 'GB'"></td></tr>
+                <tr><th>ストレージ</th><td th:text="${spec.ssdGb} + 'GB SSD'"></td></tr>
+                <tr><th>CPU</th><td th:text="${spec.cpuMaker}"></td></tr>
+                <tr th:if="${spec.hasGpu != null}"><th>GPU</th><td th:text="${spec.hasGpu ? '搭載あり' : '搭載なし'}"></td></tr>
+            </table>
+            <form class="purchase" method="post" th:action="@{/cart/items}">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                <input type="hidden" name="productId" th:value="${product.id}">
+                <label>数量 <input type="number" name="quantity" min="1" value="1"></label>
+                <button type="submit">カートに入れる</button>
+            </form>
+        </div>
+    </section>
+    <a class="back" th:href="@{/products}">商品一覧へ戻る</a>
+</main>
+</body>
+</html>

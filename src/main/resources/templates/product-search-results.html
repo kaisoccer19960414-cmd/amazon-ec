@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${category} + ' 検索結果 - Amazon EC'"></title>
+    <style>
+        body { font-family: sans-serif; margin: 0; background: #f7f7f7; }
+        header { background: #232f3e; color: #fff; padding: 12px 24px; display: flex; justify-content: space-between; }
+        header a { color: #fff; text-decoration: none; font-size: 13px; margin-left: 16px; }
+        .layout { display: flex; padding: 24px; gap: 24px; }
+        .sidebar { width: 220px; background: #fff; padding: 16px; border-radius: 8px; height: fit-content; }
+        .sidebar h3 { font-size: 13px; margin: 12px 0 6px; }
+        .sidebar label { display: block; font-size: 13px; margin-bottom: 4px; }
+        .sidebar input[type=number] { width: 100%; padding: 4px; box-sizing: border-box; margin-bottom: 4px; }
+        .sidebar button { width: 100%; padding: 8px; background: #f0ad4e; border: none; border-radius: 4px; cursor: pointer; margin-top: 12px; font-weight: bold; }
+        .results { flex: 1; }
+        .count { font-size: 13px; color: #666; margin-bottom: 12px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; }
+        .card { background: #fff; border-radius: 8px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .card .thumb { width: 100%; height: 120px; object-fit: contain; background: #f7f7f7; border-radius: 4px; margin-bottom: 10px; }
+        .card h2 { font-size: 14px; margin: 0 0 8px; }
+        .price { font-size: 16px; font-weight: bold; margin-bottom: 4px; }
+        .spec { font-size: 11px; color: #666; margin-bottom: 8px; }
+        .buy-btn { width: 100%; padding: 8px; background: #f0ad4e; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .pagination { margin-top: 20px; text-align: center; }
+        .pagination a, .pagination span { display: inline-block; padding: 6px 10px; margin: 0 2px; border-radius: 4px; text-decoration: none; font-size: 13px; }
+        .pagination a { background: #fff; color: #333; }
+        .pagination span.current { background: #232f3e; color: #fff; }
+    </style>
+</head>
+<body>
+<header>
+    <div th:text="${category} + ' 検索結果'"></div>
+    <div>
+        <a th:href="@{/products/search}">カテゴリ選択へ戻る</a>
+        <a th:href="@{/products}">商品一覧へ</a>
+    </div>
+</header>
+
+<div class="layout">
+    <aside class="sidebar">
+        <form method="get" th:action="@{'/products/search/' + ${category}}">
+            <h3>価格帯</h3>
+            <input type="number" name="priceMin" th:value="${priceMin}" placeholder="下限">
+            <input type="number" name="priceMax" th:value="${priceMax}" placeholder="上限">
+
+            <div th:if="${category.name() == 'LAPTOP' || category.name() == 'DESKTOP'}">
+                <h3>RAM(GB)</h3>
+                <label th:each="v : ${ramOptions}">
+                    <input type="checkbox" name="ram" th:value="${v}" th:checked="${selectedRam.contains(v)}"> <span th:text="${v} + 'GB'"></span>
+                </label>
+
+                <h3>SSD(GB)</h3>
+                <label th:each="v : ${ssdOptions}">
+                    <input type="checkbox" name="ssd" th:value="${v}" th:checked="${selectedSsd.contains(v)}"> <span th:text="${v} + 'GB'"></span>
+                </label>
+
+                <h3>CPUメーカー</h3>
+                <label>
+                    <input type="checkbox" name="cpu" value="INTEL" th:checked="${selectedCpu.contains(T(com.example.amazon.entity.CpuMaker).INTEL)}"> Intel
+                </label>
+                <label>
+                    <input type="checkbox" name="cpu" value="AMD" th:checked="${selectedCpu.contains(T(com.example.amazon.entity.CpuMaker).AMD)}"> AMD
+                </label>
+
+                <div th:if="${category.name() == 'DESKTOP'}">
+                    <h3>GPU</h3>
+                    <label><input type="radio" name="hasGpu" value="" th:checked="${selectedHasGpu == null}"> 指定なし</label>
+                    <label><input type="radio" name="hasGpu" value="true" th:checked="${selectedHasGpu != null and selectedHasGpu}"> 搭載あり</label>
+                    <label><input type="radio" name="hasGpu" value="false" th:checked="${selectedHasGpu != null and !selectedHasGpu}"> 搭載なし</label>
+                </div>
+            </div>
+
+            <button type="submit">絞り込む</button>
+        </form>
+    </aside>
+
+    <div class="results">
+        <p class="count" th:text="${totalCount} + '件中 ' + ${displayFrom} + '〜' + ${displayTo} + '件を表示'"></p>
+
+        <div class="grid">
+            <div class="card" th:each="product : ${products}">
+                <a th:href="@{'/products/' + ${product.id}}">
+                    <img class="thumb" th:src="@{${@productImageResolver.resolve(product)}}" th:alt="${product.name}">
+                </a>
+                <h2><a th:href="@{'/products/' + ${product.id}}" th:text="${product.name}"></a></h2>
+                <div class="price" th:text="'¥' + ${@taxCalculator.includedUnitPrice(product.price)} + '（税込）'"></div>
+                <div class="spec" th:if="${specMap.containsKey(product.id)}"
+                     th:text="${specMap.get(product.id).ramGb} + 'GB RAM / ' + ${specMap.get(product.id).ssdGb} + 'GB SSD / ' + ${specMap.get(product.id).cpuMaker}"></div>
+                <form method="post" th:action="@{/cart/items}">
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                    <input type="hidden" name="productId" th:value="${product.id}">
+                    <input type="hidden" name="quantity" value="1">
+                    <button type="submit" class="buy-btn">カートに入れる</button>
+                </form>
+            </div>
+        </div>
+
+        <p th:if="${products.isEmpty()}" style="text-align:center; color:#999; margin-top:40px;">条件に合う商品が見つかりませんでした</p>
+
+        <div class="pagination" th:if="${totalPages > 1}">
+            <span th:each="i : ${#numbers.sequence(0, totalPages - 1)}">
+                <span th:if="${i == currentPage}" class="current" th:text="${i + 1}"></span>
+                <a th:unless="${i == currentPage}"
+                   th:href="@{'/products/search/' + ${category}(page=${i}, priceMin=${priceMin}, priceMax=${priceMax}, ram=${selectedRam}, ssd=${selectedSsd}, cpu=${selectedCpu}, hasGpu=${selectedHasGpu})}"
+                   th:text="${i + 1}"></a>
+            </span>
+        </div>
+    </div>
+</div>
+</body>
+</html>

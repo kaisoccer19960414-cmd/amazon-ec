@@ -8,10 +8,11 @@ import com.example.amazon.exception.DellReservationException;
 import com.example.amazon.exception.SmbcPaymentException;
 import com.example.amazon.repository.OrderRepository;
 import com.example.amazon.repository.ProductRepository;
+import com.example.amazon.entity.Product;
+import com.example.amazon.entity.ProductCategory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -58,7 +59,10 @@ class OrderServiceTest {
     @Mock
     private SmbcClient smbcClient;
 
-    @InjectMocks
+    // TaxCalculatorは純粋な計算しかしないので、モックにせず実物をそのまま使う。
+    // (税額の計算式そのものが正しいことも、このテストで一緒に検証される)
+    private final TaxCalculator taxCalculator = new TaxCalculator();
+
     private OrderService orderService;
 
     private static final String PRODUCT_ID = "PRD-000001";
@@ -70,13 +74,15 @@ class OrderServiceTest {
 
     @BeforeEach
     void setUp() {
+        orderService = new OrderService(orderRepository, productRepository, dellClient, smbcClient, taxCalculator);
+
         request = new OrderRequest();
         request.setUserId(1L);
         request.setProductId(PRODUCT_ID);
         request.setQuantity(1);
         request.setToken("token_dummy");
 
-        product = new Product(PRODUCT_ID, "テスト商品", 10000, 5);
+        product = new Product(PRODUCT_ID, "テスト商品", 10000, 5, ProductCategory.ACCESSORY, true);
 
         when(productRepository.findById(PRODUCT_ID)).thenReturn(Optional.of(product));
         lenient().when(orderRepository.countByIdStartingWith(anyString())).thenReturn(0L);
@@ -85,7 +91,7 @@ class OrderServiceTest {
     @Test
     void 正常系_在庫確保と決済がどちらも成功したらCOMPLETEDになる() {
         when(dellClient.reserve(anyString(), eq(PRODUCT_ID), eq(1))).thenReturn(RESERVATION_ID);
-        when(smbcClient.pay(anyString(), eq("token_dummy"), eq(10000))).thenReturn(TRANSACTION_ID);
+        when(smbcClient.pay(anyString(), eq("token_dummy"), eq(10800))).thenReturn(TRANSACTION_ID);
 
         Order order = orderService.placeOrder(request);
 
@@ -109,7 +115,7 @@ class OrderServiceTest {
     @Test
     void 決済に失敗し在庫解放が成功したらCANCELLEDになる() {
         when(dellClient.reserve(anyString(), eq(PRODUCT_ID), eq(1))).thenReturn(RESERVATION_ID);
-        when(smbcClient.pay(anyString(), eq("token_dummy"), eq(10000)))
+        when(smbcClient.pay(anyString(), eq("token_dummy"), eq(10800)))
                 .thenThrow(new SmbcPaymentException("INSUFFICIENT_BALANCE", "残高が不足しています"));
         when(dellClient.release(anyString(), eq(RESERVATION_ID))).thenReturn(true);
 
@@ -123,7 +129,7 @@ class OrderServiceTest {
     @Test
     void 決済に失敗し在庫解放も3回とも失敗したらCOMPENSATION_FAILEDになる() {
         when(dellClient.reserve(anyString(), eq(PRODUCT_ID), eq(1))).thenReturn(RESERVATION_ID);
-        when(smbcClient.pay(anyString(), eq("token_dummy"), eq(10000)))
+        when(smbcClient.pay(anyString(), eq("token_dummy"), eq(10800)))
                 .thenThrow(new SmbcPaymentException("INSUFFICIENT_BALANCE", "残高が不足しています"));
         when(dellClient.release(anyString(), eq(RESERVATION_ID))).thenReturn(false);
 

@@ -1,0 +1,77 @@
+---
+title: システム全体アーキテクチャ（分散ECサイト学習プロジェクト）
+---
+
+# 概要
+
+「Amazon（EC）× Dell（商品/在庫会社）× SMBC（決済会社）」という3社が協調して1つの取引を成立させる、分散システム学習用のECサイト。元は決済もEC機能も1つのDBで完結するモノリシック設計だったが、「実際の商取引は複数の独立した会社がAPI越しに連携している」という構造を学ぶために、3つの独立したSpring Bootプロジェクト（3つの独立したDB）に分割した。
+
+学習の焦点は「登場人物の数」ではなく、**別々の会社（別々のDB）がAPIでやり取りして1つの取引を成立させる構造そのもの**。そのため各業種を1社ずつに絞る「三すくみ構成」を採用している。
+
+# 3つのプロジェクト
+
+| プロジェクト | ローカルパス | 役割 | ポート | DB |
+|---|---|---|---|---|
+| amazon-ec | `C:\Users\user\Desktop\amazon-ec` | ECサイト本体（商品・注文・ユーザー・カート・認証） | 8080 | `amazon_ec` |
+| dell-inventory | `C:\Users\user\Desktop\dell-inventory` | 商品会社（在庫・予約管理） | 8081 | `dell_inventory` |
+| smbc-payment | `C:\Users\user\Desktop\smbc-payment` | 決済会社（カードトークン・決済） | 8082 | `smbc_payment` |
+
+3プロジェクトとも同じ層構成（controller/service/entity/repository/dto/exception）で統一されている。共通スタック: Java 17 / Spring Boot 3.3.4 / Gradle / PostgreSQL / Flyway（マイグレーション）/ Lombok / Docker（`docker-compose up --build`でローカル一括起動）。GitHub Actions CI + Qodanaコード品質チェックあり。
+
+# サービス間通信
+
+- 通信方式: 同期HTTP（REST API）。決済のように即座に成功/失敗を知りたい処理のため、非同期のメッセージキューではなくHTTPを採用。
+- クライアント実装: Spring WebClientを`.block()`で同期的に使用（RestTemplateは非推奨のため不採用）。
+- 通信の向き: Dell → Amazon（商品同期API `/products/sync`）、Amazon → Dell（在庫予約/確定/解放）、Amazon → SMBC（トークン発行/決済）。
+- サーバー間通信（Dellからの`/products/sync`）はSpring Securityの`permitAll()`と`csrf.ignoringRequestMatchers(...)`の両方が必要（認可とCSRF保護は別物、という教訓が`docs/8_13/SpringSecurity(API).md`に記録されている）。
+
+# 注文の状態遷移（Sagaパターン）
+
+3社にまたがる取引のため、「在庫は確保できたが決済は失敗した」のような中途半端な状態が起こりうる。これを扱うために以下の状態遷移（Sagaパターンの補償トランザクション）を採用：
+
+```
+PENDING → 在庫確保試行
+  →(失敗)→ STOCK_FAILED
+  →(成功)→ STOCK_RESERVED
+      →(決済成功)→ COMPLETED
+      →(決済失敗)→ COMPENSATING（補償処理中）
+          →(在庫解放成功)→ CANCELLED
+          →(在庫解放失敗・リトライ上限到達)→ COMPENSATION_FAILED（要手動対応）
+```
+
+管理者画面（Thymeleaf `/admin/orders`）でステータスごとに色分け表示し、特に`COMPENSATION_FAILED`は赤字で強調している。
+
+# 主要な設計判断
+
+- **在庫の真実の所在**: Amazon側も`products`テーブルに在庫キャッシュを持つ（商品一覧表示用）。ただし注文確定時は必ずDellに最新在庫を問い合わせる。実際のAmazonの一覧表示に近い構造。
+- **決済トークン方式**: PCI DSS的な発想で、生のカード番号はAmazon側に保存しない。カード登録時にSMBCへ生カード情報を送りトークンを受け取り、以降Amazon（Userエンティティの`smbcToken`）はトークンのみ保持。
+- **相関ID**: 3社のログを串刺しで追えるよう、共通の注文IDを採番。形式は`ORD-yyyyMMdd-連番4桁`（ログでの視認性・日付での絞り込みやすさ・実務の伝票番号慣習を考慮）。
+- **エラーレスポンス統一**: Dell/SMBC共通で`{errorCode, message, orderId}`形式。
+- **楽観ロック**: Reservation/Transactionエンティティに`version`フィールドを追加し、同時実行の在庫取り合いに対応（dell-inventoryのテストで「2つの注文が同時に同じ商品を予約」するケースを検証済み）。
+- **enum管理**: OrderStatus等はenumで管理し、タイポによる実行時バグを防止。
+- **認証**: Amazon側にSpring Security（ID/パスワード + BCrypt）を導入。`@AuthenticationPrincipal`から取得する改ざん不可能な`userId`のみでデータを絞り込み、他人の注文履歴が見えないことを実機で確認済み。
+
+# DBスキーマ概要（3社間はAPI連携のみ、外部キーなし）
+
+- **DELL_PRODUCTS**(product_id PK, name, stock) → **DELL_RESERVATIONS**(id PK, order_id, product_id FK)
+- **AMAZON_PRODUCTS**(product_id PK, name, cached_stock) — DELL_PRODUCTSとはAPI同期のみ（DB上の外部キーではない）
+- **AMAZON_USERS**(id PK, username, smbc_token) → **AMAZON_ORDERS**(id PK, user_id FK, product_id FK, status)
+- **SMBC_CARD_TOKENS**(token PK, balance) → **SMBC_TRANSACTIONS**(id PK, order_id, token FK) — AMAZON_USERSとはAPI経由のみ
+
+# 現在の状況（2026-08-17時点のメモより）
+
+- amazon-ec: 商品検索・カート・注文履歴・カード登録・管理者注文画面まで実装済み。ローカルでDocker Compose経由で3サービス起動可能。
+- dell-inventory: 予約(reserve)/確定(confirm)/解放(release)の在庫操作とテスト（9件）を整備済み。特に「決済確定済みの予約を誤って二重解放させない」ガードを重点的にテスト。
+- 本番デプロイに向けて画面要否を再検討中：
+  - SMBC: 画面不要（API onlyの受動的インフラという位置づけ）
+  - Dell: 当初は画面不要としていたが、「Dellが商品を出品する」導線が存在せず、Amazon側の在庫キャッシュとDell側在庫が手動INSERTで非連動という設計漏れが判明。簡易商品管理画面を作り、登録時にAPIでAmazonへ同期する設計に変更中。
+  - カード登録: 「ユーザーは既にSMBCでカードを持っている」前提のまま、Amazon画面からのカード情報入力は維持。
+- **次のアクション**: Dellの商品管理画面の詳細設計（ここで一旦作業が止まっている）。
+
+# 参考ドキュメント（各プロジェクトのdocsフォルダ内）
+
+- `amazon-ec/docs/8_12/ここまでの経緯.md` — 上記の設計判断の経緯が詳細に記録された議事録
+- `amazon-ec/docs/8_13/SpringSecurity(API).md` — permitAll()とCSRFの違いについての学習メモ
+- `amazon-ec/docs/8_13/DBの理解` — 3社間のデータフロー簡易図
+- `amazon-ec/docs/image/three_db_schema_overview.html` — 3DBのER図（Mermaid）
+- `dell-inventory/docs/テスト９件.md` — 在庫操作の単体テスト内容と学び

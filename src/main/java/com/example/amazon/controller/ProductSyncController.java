@@ -1,7 +1,10 @@
 package com.example.amazon.controller;
 
 import com.example.amazon.dto.request.ProductSyncRequest;
+import com.example.amazon.entity.PcSpec;
 import com.example.amazon.entity.Product;
+import com.example.amazon.entity.ProductCategory;
+import com.example.amazon.repository.PcSpecRepository;
 import com.example.amazon.repository.ProductRepository;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -16,16 +19,12 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.LocalDateTime;
 import java.util.Map;
 
-/**
- * Dellが商品を登録・更新した際に、その場でAmazon側の在庫キャッシュへ
- * 反映するための受け口。人間のログインセッションではなく、
- * Dellだけが知っているAPIキーで本人確認を行う(サーバー間通信のための認証)。
- */
 @RestController
 @RequiredArgsConstructor
 public class ProductSyncController {
 
     private final ProductRepository productRepository;
+    private final PcSpecRepository pcSpecRepository;
 
     @Value("${products.sync.api-key}")
     private String expectedApiKey;
@@ -39,19 +38,38 @@ public class ProductSyncController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("success", false));
         }
 
-        Product product = productRepository.findById(request.getProductId())
-                .orElse(null);
+        Product product = productRepository.findById(request.getProductId()).orElse(null);
 
         if (product == null) {
-            product = new Product(request.getProductId(), request.getName(), request.getPrice(), request.getStock());
+            product = new Product(request.getProductId(), request.getName(), request.getPrice(),
+                    request.getStock(), request.getCategory(), request.isActive());
         } else {
             product.setName(request.getName());
             product.setPrice(request.getPrice());
             product.setCachedStock(request.getStock());
+            product.setCategory(request.getCategory());
+            product.setActive(request.isActive());
             product.setUpdatedAt(LocalDateTime.now());
         }
-
         productRepository.save(product);
+
+        boolean isPc = request.getCategory() == ProductCategory.LAPTOP
+                || request.getCategory() == ProductCategory.DESKTOP;
+
+        if (isPc && request.getRamGb() != null && request.getSsdGb() != null && request.getCpuMaker() != null) {
+            PcSpec pcSpec = pcSpecRepository.findById(request.getProductId()).orElse(null);
+            if (pcSpec == null) {
+                pcSpec = new PcSpec(request.getProductId(), request.getRamGb(), request.getSsdGb(),
+                        request.getCpuMaker(), request.getHasGpu());
+            } else {
+                pcSpec.setRamGb(request.getRamGb());
+                pcSpec.setSsdGb(request.getSsdGb());
+                pcSpec.setCpuMaker(request.getCpuMaker());
+                pcSpec.setHasGpu(request.getHasGpu());
+            }
+            pcSpecRepository.save(pcSpec);
+        }
+
         return ResponseEntity.ok(Map.of("success", true));
     }
 }

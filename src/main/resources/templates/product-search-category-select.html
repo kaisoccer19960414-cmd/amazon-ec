@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>詳細検索 - Amazon EC</title>
+    <style>
+        body { font-family: sans-serif; margin: 0; background: #f7f7f7; }
+        header { background: #232f3e; color: #fff; padding: 12px 24px; }
+        header a { color: #fff; text-decoration: none; font-size: 13px; }
+        main { display: flex; justify-content: center; margin-top: 60px; }
+        .box { background: #fff; padding: 32px; border-radius: 8px; width: 320px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+        h1 { font-size: 18px; margin-top: 0; }
+        .note { font-size: 12px; color: #666; margin-bottom: 16px; }
+        a.category-link {
+            display: block; padding: 12px; margin-bottom: 8px; background: #f0f4f8;
+            border-radius: 4px; text-decoration: none; color: #333; font-size: 14px;
+        }
+        a.category-link:hover { background: #e0e8f0; }
+    </style>
+</head>
+<body>
+<header><a th:href="@{/products}">← 商品一覧へ戻る</a></header>
+<main>
+    <div class="box">
+        <h1>詳細検索</h1>
+        <p class="note">カテゴリを選ぶと、スペックや価格で絞り込めます</p>
+
+        <a class="category-link" th:href="@{/products/search/LAPTOP}">ノートPC</a>
+        <a class="category-link" th:href="@{/products/search/DESKTOP}">デスクトップPC</a>
+        <a class="category-link" th:href="@{/products/search/MONITOR}">モニター</a>
+        <a class="category-link" th:href="@{/products/search/ACCESSORY}">アクセサリ</a>
+    </div>
+</main>
+</body>
+</html>

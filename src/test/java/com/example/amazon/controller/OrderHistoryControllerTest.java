@@ -46,7 +46,7 @@ class OrderHistoryControllerTest {
     @Test
     void ログイン中ユーザー本人の注文だけがモデルに渡される() throws Exception {
         UserPrincipal principal = principalWithId(1L, "alice");
-        Order aliceOrder = new Order("ORD-20260813-0001", 1L, "PRD-000001", 1);
+        Order aliceOrder = new Order("ORD-20260813-0001", 1L, "PRD-000001", 1, 1080);
 
         when(orderRepository.findByUserIdOrderByCreatedAtDesc(1L))
                 .thenReturn(List.of(aliceOrder));

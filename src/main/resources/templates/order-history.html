@@ -12,6 +12,7 @@
         .order { background: #fff; border-radius: 8px; padding: 16px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); display: flex; justify-content: space-between; align-items: center; }
         .order-id { font-size: 13px; color: #333; font-weight: bold; }
         .order-date { font-size: 12px; color: #999; margin-top: 4px; }
+        .order-amount { font-size: 13px; color: #333; margin-top: 4px; }
         .status { padding: 4px 10px; border-radius: 4px; font-size: 12px; color: #fff; white-space: nowrap; }
         .status-PENDING { background: #999; }
         .status-STOCK_RESERVED { background: #6c8ebf; }
@@ -44,6 +45,7 @@
         <div>
             <div class="order-id" th:text="${order.id}"></div>
             <div class="order-date" th:text="${order.createdAt}"></div>
+            <div class="order-amount" th:if="${order.status.name() == 'COMPLETED'}" th:text="'お支払い金額（税込） ¥' + ${order.totalAmount}"></div>
         </div>
         <span class="status" th:classappend="'status-' + ${order.status}" th:text="${order.status}"></span>
     </div>

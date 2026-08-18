@@ -20,7 +20,8 @@
     <div class="order-id" th:text="'注文番号: ' + ${order.id}"></div>
 
     <div class="message ok" th:if="${order.status.name() == 'COMPLETED'}">
-        ご注文ありがとうございます。注文が確定しました。
+        ご注文ありがとうございます。注文が確定しました。<br>
+        お支払い金額（税込）: ¥<span th:text="${order.totalAmount}"></span>
     </div>
     <div class="message ng" th:if="${order.status.name() == 'CANCELLED'}">
         決済に失敗したため、注文はキャンセルされました。

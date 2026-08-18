@@ -23,6 +23,10 @@ public class Order {
 
     private int quantity;
 
+    /** 税込みの合計金額。SMBCへ実際に請求する金額と常に一致する(TaxCalculatorで計算)。 */
+    @Column(name = "total_amount", nullable = false)
+    private int totalAmount;
+
     @Column(name = "reservation_id")
     private Long reservationId;
 
@@ -38,11 +42,12 @@ public class Order {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    public Order(String id, Long userId, String productId, int quantity) {
+    public Order(String id, Long userId, String productId, int quantity, int totalAmount) {
         this.id = id;
         this.userId = userId;
         this.productId = productId;
         this.quantity = quantity;
+        this.totalAmount = totalAmount;
         this.status = OrderStatus.PENDING;
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();

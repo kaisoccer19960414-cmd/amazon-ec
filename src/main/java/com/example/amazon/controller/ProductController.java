@@ -5,6 +5,7 @@ import com.example.amazon.entity.Product;
 import com.example.amazon.entity.User;
 import com.example.amazon.dto.request.OrderRequest;
 import com.example.amazon.repository.ProductRepository;
+import com.example.amazon.repository.PcSpecRepository;
 import com.example.amazon.repository.UserRepository;
 import com.example.amazon.security.UserPrincipal;
 import com.example.amazon.service.OrderService;
@@ -21,6 +22,7 @@ import java.util.List;
 public class ProductController {
 
     private final ProductRepository productRepository;
+    private final PcSpecRepository pcSpecRepository;
     private final UserRepository userRepository;
     private final OrderService orderService;
 
@@ -29,11 +31,23 @@ public class ProductController {
         User user = userRepository.findById(principal.getUserId())
                 .orElseThrow(() -> new IllegalStateException("ログイン中のユーザーが見つかりません"));
 
-        List<Product> products = productRepository.findAll();
+        List<Product> products = productRepository.findByIsActiveTrue();
 
         model.addAttribute("products", products);
         model.addAttribute("cardRegistered", user.getSmbcToken() != null);
+        model.addAttribute("username", principal.getUsername());
         return "products";
+    }
+
+    @GetMapping("/products/{productId}")
+    public String productDetail(@PathVariable String productId, Model model) {
+        Product product = productRepository.findById(productId)
+                .filter(Product::isActive)
+                .orElseThrow(() -> new IllegalArgumentException("商品が見つからないか、販売停止中です"));
+
+        model.addAttribute("product", product);
+        pcSpecRepository.findById(productId).ifPresent(spec -> model.addAttribute("spec", spec));
+        return "product-detail";
     }
 
     @PostMapping("/products/{productId}/purchase")

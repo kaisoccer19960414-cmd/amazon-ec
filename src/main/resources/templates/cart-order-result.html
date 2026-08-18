@@ -1,0 +1,5 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"><title>注文結果 - Amazon EC</title><style>body{font-family:sans-serif;background:#f7f7f7;margin:0}.box{max-width:600px;margin:80px auto;background:#fff;padding:28px;border-radius:8px}.ok{color:#2e7d32}.ng{color:#b12704}.order{padding:12px 0;border-bottom:1px solid #eee}a{display:inline-block;margin-top:20px}</style></head>
+<body><main class="box"><h1>注文結果</h1><div class="order" th:each="order : ${orders}"><strong th:text="'注文番号: ' + ${order.id}"></strong><p class="ok" th:if="${order.status.name() == 'COMPLETED'}" th:text="'注文が確定しました。お支払い金額（税込）: ¥' + ${order.totalAmount}"></p><p class="ng" th:unless="${order.status.name() == 'COMPLETED'}" th:text="'注文を完了できませんでした（' + ${order.status} + '）。未購入の商品はカートに残っています。'"></p></div><a th:href="@{/cart}">カートへ戻る</a><a th:href="@{/products}" style="margin-left:16px">商品一覧へ</a></main></body>
+</html>

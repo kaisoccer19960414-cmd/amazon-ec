@@ -24,6 +24,7 @@ public class OrderService {
     private final ProductRepository productRepository;
     private final DellClient dellClient;
     private final SmbcClient smbcClient;
+    private final TaxCalculator taxCalculator;
 
     /**
      * 注文を開始し、Sagaを最後まで遂行する。
@@ -35,7 +36,16 @@ public class OrderService {
         Product product = productRepository.findById(request.getProductId())
                 .orElseThrow(() -> new IllegalArgumentException("商品が見つかりません"));
 
-        Order order = new Order(generateOrderId(), request.getUserId(), request.getProductId(), request.getQuantity());
+        if (!product.isActive()) {
+            // URLを直接叩く等、一覧画面を経由しない注文の抜け道を塞ぐ
+            throw new IllegalArgumentException("この商品は現在販売停止中です");
+        }
+
+        // 税込みの合計金額をここで一度だけ計算し、Orderに保存する。
+        // 表示(カート等)と実際の請求額がズレないよう、以降はこの値を使い回す。
+        int totalAmount = taxCalculator.includedTotal(product.getPrice(), request.getQuantity());
+
+        Order order = new Order(generateOrderId(), request.getUserId(), request.getProductId(), request.getQuantity(), totalAmount);
         orderRepository.save(order);
 
         // ---- 1. 在庫確保 ----
@@ -54,7 +64,7 @@ public class OrderService {
         // ---- 2. 決済 ----
         Long transactionId;
         try {
-            transactionId = smbcClient.pay(order.getId(), request.getToken(), product.getPrice() * order.getQuantity());
+            transactionId = smbcClient.pay(order.getId(), request.getToken(), order.getTotalAmount());
         } catch (SmbcPaymentException e) {
             return compensate(order);
         }
