@@ -7,6 +7,7 @@ import com.example.amazon.dto.external.SmbcTokenRequest;
 import com.example.amazon.dto.external.SmbcTokenResponse;
 import com.example.amazon.exception.SmbcPaymentException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
@@ -17,6 +18,9 @@ public class SmbcClient {
 
     private final WebClient smbcWebClient;
 
+    @Value("${smbc.api-key}")
+    private String smbcApiKey;
+
     /**
      * カード情報をトークンに変換する。生のカード情報はAmazon側では保持せず、
      * ここで得たトークンだけをUser.smbcTokenとして保存する。
@@ -25,6 +29,7 @@ public class SmbcClient {
         try {
             SmbcTokenResponse response = smbcWebClient.post()
                     .uri("/payment/tokens")
+                    .header("X-API-Key", smbcApiKey)
                     .bodyValue(new SmbcTokenRequest(cardNumber, expiryMonth, expiryYear, cvv))
                     .retrieve()
                     .bodyToMono(SmbcTokenResponse.class)
@@ -51,6 +56,7 @@ public class SmbcClient {
         try {
             SmbcPaymentResponse response = smbcWebClient.post()
                     .uri("/payment/pay")
+                    .header("X-API-Key", smbcApiKey)
                     .bodyValue(new SmbcPayRequest(orderId, token, amount))
                     .retrieve()
                     .bodyToMono(SmbcPaymentResponse.class)

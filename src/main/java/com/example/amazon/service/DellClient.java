@@ -6,6 +6,7 @@ import com.example.amazon.dto.external.DellReserveRequest;
 import com.example.amazon.dto.external.ExternalErrorResponse;
 import com.example.amazon.exception.DellReservationException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
@@ -16,6 +17,9 @@ public class DellClient {
 
     private final WebClient dellWebClient;
 
+    @Value("${dell.api-key}")
+    private String dellApiKey;
+
     /**
      * 在庫仮確保を依頼する。失敗時(在庫不足・商品なし・通信エラー等)は
      * すべてDellReservationExceptionにまとめて変換する。
@@ -24,6 +28,7 @@ public class DellClient {
         try {
             DellReservationResponse response = dellWebClient.post()
                     .uri("/inventory/reserve")
+                    .header("X-API-Key", dellApiKey)
                     .bodyValue(new DellReserveRequest(orderId, productId, quantity))
                     .retrieve()
                     .bodyToMono(DellReservationResponse.class)
@@ -50,6 +55,7 @@ public class DellClient {
         try {
             dellWebClient.post()
                     .uri("/inventory/confirm")
+                    .header("X-API-Key", dellApiKey)
                     .bodyValue(new DellReservationActionRequest(orderId, reservationId))
                     .retrieve()
                     .toBodilessEntity()
@@ -68,6 +74,7 @@ public class DellClient {
         try {
             dellWebClient.post()
                     .uri("/inventory/release")
+                    .header("X-API-Key", dellApiKey)
                     .bodyValue(new DellReservationActionRequest(orderId, reservationId))
                     .retrieve()
                     .toBodilessEntity()
