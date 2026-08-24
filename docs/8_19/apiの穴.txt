@@ -1,0 +1,17 @@
+| 通信                             | 現状                | 必要な認証      |
+| ------------------------------　 | ----------------- | ---------- |
+| ユーザー → Amazon                  | Spring Securityあり | ログイン       |
+| Amazon → Dell `/products/sync` | API Keyあり         | API Key    |
+| Amazon → Dell `/inventory/*`   | なし                | API Key    |
+| Amazon → SMBC `/payment/*`     | なし                | API Key    |
+| 外部 → Dell `/products/*`        | なし                | Basic認証等   |
+| 外部 → SMBC `/payment/*`         | なし                | API Keyで遮断 |
+| 外部 → Amazon                    | Spring Security   | ログイン       |
+
+
+デプロイして初めて知った。
+現状userのセキュリティーとapi通信は守られてる設定だったが、
+会社間のapi(amazon↔dell、amazon↔smbc)が誰でもurlでpost通信できてしまうってこと。
+
+api keyを作り、誰でもpost通信出来ないよう(認証されたもの以外)にガードする。
+
