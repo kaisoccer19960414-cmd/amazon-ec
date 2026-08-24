@@ -17,8 +17,11 @@
         .card h2 { font-size: 15px; margin: 0 0 8px; }
         .price { font-size: 18px; font-weight: bold; margin-bottom: 4px; }
         .stock { font-size: 12px; color: #666; margin-bottom: 12px; }
+        .stock.out-of-stock { color: #b12704; font-weight: bold; }
         button { width: 100%; padding: 8px; background: #f0ad4e; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
         button:hover { background: #ec9a3c; }
+        button.sold-out-btn { background: #e0e0e0; color: #888; cursor: not-allowed; }
+        button.sold-out-btn:hover { background: #e0e0e0; }
         .logout-btn { display: inline; width: auto; padding: 0; background: none; color: #fff; font-size: 13px; margin-left: 16px; text-decoration: none; border: none; cursor: pointer; font-weight: normal; }
         .username { margin-left: auto; margin-right: 8px; font-size: 13px; }
         .category-nav { display: flex; justify-content: center; gap: 16px; margin-bottom: 24px; width: 100%; }
@@ -34,6 +37,10 @@
             object-fit: contain;
             margin: 0 auto 4px;
         }
+        .pagination { display: flex; justify-content: center; align-items: center; gap: 16px; margin-top: 24px; }
+        .pagination a { color: #1a73e8; text-decoration: none; font-size: 13px; }
+        .pagination span.disabled { color: #ccc; font-size: 13px; }
+        .pagination .page-info { font-size: 13px; color: #666; }
     </style>
 </head>
 <body>
@@ -72,14 +79,24 @@
             </a>
             <h2><a th:href="@{'/products/' + ${product.id}}" th:text="${product.name}"></a></h2>
             <div class="price" th:text="'¥' + ${@taxCalculator.includedUnitPrice(product.price)} + '（税込）'"></div>
-            <div class="stock" th:text="'在庫: ' + ${product.cachedStock}"></div>
-            <form method="post" th:action="@{/cart/items}">
+            <div class="stock" th:if="${product.cachedStock > 0}" th:text="'在庫: ' + ${product.cachedStock}"></div>
+            <div class="stock out-of-stock" th:if="${product.cachedStock <= 0}">在庫切れ</div>
+            <form method="post" th:if="${product.cachedStock > 0}" th:action="@{/cart/items}">
                 <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
                 <input type="hidden" name="productId" th:value="${product.id}">
                 <input type="hidden" name="quantity" value="1">
                 <button type="submit">カートに入れる</button>
             </form>
+            <button th:if="${product.cachedStock <= 0}" type="button" class="sold-out-btn" disabled>在庫切れ</button>
         </div>
+    </div>
+
+    <div class="pagination" th:if="${page.totalPages > 1}">
+        <a th:if="${!page.first}" th:href="@{/products(page=${page.number - 1})}">&laquo; 前へ</a>
+        <span th:unless="${!page.first}" class="disabled">&laquo; 前へ</span>
+        <span class="page-info" th:text="${page.number + 1} + ' / ' + ${page.totalPages}"></span>
+        <a th:if="${!page.last}" th:href="@{/products(page=${page.number + 1})}">次へ &raquo;</a>
+        <span th:unless="${!page.last}" class="disabled">次へ &raquo;</span>
     </div>
 </main>
 </body>

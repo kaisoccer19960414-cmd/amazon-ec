@@ -24,17 +24,33 @@
         .status-CANCELLED { background: #888; }
         .status-STOCK_FAILED { background: #b85c5c; }
         .status-COMPENSATION_FAILED { background: #c0392b; font-weight: bold; }
+
+        .search-form { display: flex; margin-bottom: 16px; }
+        .search-form input[type="text"] { width: 320px; padding: 6px 10px; font-size: 13px; border: 1px solid #ccc; border-radius: 4px 0 0 4px; }
+        .search-form button { padding: 6px 12px; font-size: 14px; border: 1px solid #333; background: #333; color: #fff; border-radius: 0 4px 4px 0; cursor: pointer; }
+        .search-form button:hover { background: #555; }
+
+        .pagination { display: flex; justify-content: center; align-items: center; gap: 16px; margin-top: 20px; }
+        .pagination a { color: #1a73e8; text-decoration: none; font-size: 13px; }
+        .pagination span.disabled { color: #ccc; font-size: 13px; }
+        .pagination .page-info { font-size: 13px; color: #666; }
     </style>
 </head>
 <body>
 
 <h1>注文管理</h1>
 
+<form class="search-form" method="get" th:action="@{/admin/orders}">
+    <input type="hidden" name="status" th:if="${selectedStatus != null}" th:value="${selectedStatus}">
+    <input type="text" name="keyword" th:value="${keyword}" placeholder="注文IDを検索するところ：Enterで検索">
+    <button type="submit" aria-label="検索">&#128269;</button>
+</form>
+
 <div class="filter">
-    <a th:href="@{/admin/orders}"
+    <a th:href="@{/admin/orders(keyword=${keyword})}"
        th:classappend="${selectedStatus == null} ? 'active' : ''">すべて</a>
     <a th:each="s : ${statuses}"
-       th:href="@{/admin/orders(status=${s})}"
+       th:href="@{/admin/orders(status=${s}, keyword=${keyword})}"
        th:classappend="${selectedStatus != null and selectedStatus.name() == s.name()} ? 'active' : ''"
        th:text="${s}"></a>
 </div>
@@ -46,6 +62,7 @@
         <th>ユーザーID</th>
         <th>商品ID</th>
         <th>数量</th>
+        <th>金額(税込)</th>
         <th>予約ID</th>
         <th>決済ID</th>
         <th>ステータス</th>
@@ -59,6 +76,7 @@
         <td th:text="${order.userId}"></td>
         <td th:text="${order.productId}"></td>
         <td th:text="${order.quantity}"></td>
+        <td th:text="'¥' + ${order.totalAmount}"></td>
         <td th:text="${order.reservationId}"></td>
         <td th:text="${order.transactionId}"></td>
         <td>
@@ -68,10 +86,18 @@
         <td th:text="${order.updatedAt}"></td>
     </tr>
     <tr th:if="${orders.isEmpty()}">
-        <td colspan="9" style="text-align:center; color:#999;">該当する注文はありません</td>
+        <td colspan="10" style="text-align:center; color:#999;">該当する注文はありません</td>
     </tr>
     </tbody>
 </table>
+
+<div class="pagination" th:if="${page.totalPages > 1}">
+    <a th:if="${!page.first}" th:href="@{/admin/orders(status=${selectedStatus}, keyword=${keyword}, page=${page.number - 1})}">&laquo; 前へ</a>
+    <span th:unless="${!page.first}" class="disabled">&laquo; 前へ</span>
+    <span class="page-info" th:text="${page.number + 1} + ' / ' + ${page.totalPages}"></span>
+    <a th:if="${!page.last}" th:href="@{/admin/orders(status=${selectedStatus}, keyword=${keyword}, page=${page.number + 1})}">次へ &raquo;</a>
+    <span th:unless="${!page.last}" class="disabled">次へ &raquo;</span>
+</div>
 
 </body>
 </html>

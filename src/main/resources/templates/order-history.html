@@ -9,10 +9,16 @@
         header a { color: #fff; text-decoration: none; font-size: 13px; margin-left: 16px; }
         main { padding: 24px; max-width: 700px; margin: 0 auto; }
         h1 { font-size: 18px; }
-        .order { background: #fff; border-radius: 8px; padding: 16px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); display: flex; justify-content: space-between; align-items: center; }
+        .order { background: #fff; border-radius: 8px; padding: 16px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); display: flex; align-items: center; gap: 16px; }
+        .order-thumb { width: 64px; height: 64px; object-fit: contain; background: #f7f7f7; border-radius: 4px; flex-shrink: 0; }
+        .order-info { flex: 1; min-width: 0; }
         .order-id { font-size: 13px; color: #333; font-weight: bold; }
         .order-date { font-size: 12px; color: #999; margin-top: 4px; }
+        .order-product-name { font-size: 14px; color: #222; font-weight: bold; margin-top: 6px; }
         .order-amount { font-size: 13px; color: #333; margin-top: 4px; }
+        .order-actions { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; flex-shrink: 0; }
+        .buy-again-btn { background: #f0ad4e; color: #111; text-decoration: none; padding: 6px 14px; border-radius: 4px; font-size: 13px; font-weight: bold; white-space: nowrap; }
+        .buy-again-btn:hover { background: #ec9a3c; }
         .status { padding: 4px 10px; border-radius: 4px; font-size: 12px; color: #fff; white-space: nowrap; }
         .status-PENDING { background: #999; }
         .status-STOCK_RESERVED { background: #6c8ebf; }
@@ -41,13 +47,20 @@
 <main>
     <h1>注文履歴</h1>
 
-    <div class="order" th:each="order : ${orders}">
-        <div>
+    <div class="order" th:each="order : ${orders}"
+         th:with="isCompleted=${order.status.name() == 'COMPLETED'}, product=${productsById.get(order.productId)}">
+        <img th:if="${isCompleted and product != null}" class="order-thumb"
+             th:src="@{${@productImageResolver.resolve(product)}}" th:alt="${product.name}">
+        <div class="order-info">
             <div class="order-id" th:text="${order.id}"></div>
             <div class="order-date" th:text="${order.createdAt}"></div>
-            <div class="order-amount" th:if="${order.status.name() == 'COMPLETED'}" th:text="'お支払い金額（税込） ¥' + ${order.totalAmount}"></div>
+            <div class="order-product-name" th:if="${isCompleted and product != null}" th:text="${product.name}"></div>
+            <div class="order-amount" th:if="${isCompleted}" th:text="'お支払い金額（税込） ¥' + ${order.totalAmount}"></div>
         </div>
-        <span class="status" th:classappend="'status-' + ${order.status}" th:text="${order.status}"></span>
+        <div class="order-actions">
+            <a th:if="${isCompleted}" class="buy-again-btn" th:href="@{'/products/' + ${order.productId}}">もう一度買う</a>
+            <span class="status" th:classappend="'status-' + ${order.status}" th:text="${order.status}"></span>
+        </div>
     </div>
 
     <p class="empty" th:if="${orders.isEmpty()}">まだ注文がありません</p>

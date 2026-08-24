@@ -10,16 +10,19 @@ import com.example.amazon.repository.UserRepository;
 import com.example.amazon.security.UserPrincipal;
 import com.example.amazon.service.OrderService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
 @Controller
 @RequiredArgsConstructor
 public class ProductController {
+
+    /** 商品一覧の1ページあたりの件数 */
+    private static final int PAGE_SIZE = 20;
 
     private final ProductRepository productRepository;
     private final PcSpecRepository pcSpecRepository;
@@ -27,13 +30,16 @@ public class ProductController {
     private final OrderService orderService;
 
     @GetMapping("/products")
-    public String products(@AuthenticationPrincipal UserPrincipal principal, Model model) {
+    public String products(@AuthenticationPrincipal UserPrincipal principal,
+                           @RequestParam(defaultValue = "0") int page,
+                           Model model) {
         User user = userRepository.findById(principal.getUserId())
                 .orElseThrow(() -> new IllegalStateException("ログイン中のユーザーが見つかりません"));
 
-        List<Product> products = productRepository.findByIsActiveTrue();
+        Page<Product> productPage = productRepository.findByIsActiveTrue(PageRequest.of(page, PAGE_SIZE));
 
-        model.addAttribute("products", products);
+        model.addAttribute("products", productPage.getContent());
+        model.addAttribute("page", productPage);
         model.addAttribute("cardRegistered", user.getSmbcToken() != null);
         model.addAttribute("username", principal.getUsername());
         return "products";

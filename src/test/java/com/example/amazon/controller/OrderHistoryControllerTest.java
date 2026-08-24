@@ -59,7 +59,7 @@ class OrderHistoryControllerTest {
         // 「本人の注文だけ」を取得するメソッドしか呼ばれておらず、
         // 全ユーザー分を取得するメソッド(管理者向け)は一切呼ばれていないことを確認する
         verify(orderRepository).findByUserIdOrderByCreatedAtDesc(1L);
-        verify(orderRepository, never()).findAllByOrderByCreatedAtDesc();
+        verify(orderRepository, never()).findAllByOrderByCreatedAtDesc(any());
     }
 
     @Test

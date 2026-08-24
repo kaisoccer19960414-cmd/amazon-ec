@@ -30,9 +30,20 @@ public class CartService {
                 .filter(Product::isActive)
                 .orElseThrow(() -> new IllegalArgumentException("商品が見つからないか、販売停止中です"));
 
-        cartItemRepository.findByUserIdAndProduct_Id(userId, productId)
-                .ifPresentOrElse(item -> item.addQuantity(quantity),
-                        () -> cartItemRepository.save(new CartItem(userId, product, quantity)));
+        // 一覧・詳細画面のボタン制御をすり抜けて直接POSTされた場合の防御。
+        if (product.getCachedStock() <= 0) {
+            throw new IllegalArgumentException("この商品は在庫切れのため、カートに追加できません");
+        }
+
+        var existingItem = cartItemRepository.findByUserIdAndProduct_Id(userId, productId);
+        // 既にカートに入っている分と合算した数量が在庫を超えないかをチェックする。
+        int totalQuantity = existingItem.map(CartItem::getQuantity).orElse(0) + quantity;
+        if (totalQuantity > product.getCachedStock()) {
+            throw new IllegalArgumentException("在庫数(" + product.getCachedStock() + "点)を超える数量は指定できません");
+        }
+
+        existingItem.ifPresentOrElse(item -> item.addQuantity(quantity),
+                () -> cartItemRepository.save(new CartItem(userId, product, quantity)));
     }
 
     @Transactional
@@ -41,6 +52,9 @@ public class CartService {
         if (quantity < 1) {
             cartItemRepository.delete(item);
             return;
+        }
+        if (quantity > item.getProduct().getCachedStock()) {
+            throw new IllegalArgumentException("在庫数(" + item.getProduct().getCachedStock() + "点)を超える数量は指定できません");
         }
         item.changeQuantity(quantity);
     }
