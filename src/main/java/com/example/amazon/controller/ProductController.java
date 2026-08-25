@@ -36,7 +36,7 @@ public class ProductController {
         User user = userRepository.findById(principal.getUserId())
                 .orElseThrow(() -> new IllegalStateException("ログイン中のユーザーが見つかりません"));
 
-        Page<Product> productPage = productRepository.findByIsActiveTrue(PageRequest.of(page, PAGE_SIZE));
+        Page<Product> productPage = productRepository.findByIsActiveTrueOrderByIdAsc(PageRequest.of(page, PAGE_SIZE));
 
         model.addAttribute("products", productPage.getContent());
         model.addAttribute("page", productPage);
