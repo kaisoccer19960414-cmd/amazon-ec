@@ -3,6 +3,7 @@ package com.example.amazon.controller;
 import com.example.amazon.entity.Order;
 import com.example.amazon.entity.User;
 import com.example.amazon.repository.OrderRepository;
+import com.example.amazon.repository.ProductRepository;
 import com.example.amazon.security.UserPrincipal;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,6 +36,9 @@ class OrderHistoryControllerTest {
 
     @MockBean
     private OrderRepository orderRepository;
+
+    @MockBean
+    private ProductRepository productRepository;
 
     @Test
     void 未ログインでアクセスするとログイン画面へリダイレクトされる() throws Exception {
